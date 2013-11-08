@@ -17,7 +17,12 @@ import (
 func main() {
 	log.SetFlags(0)
 	log.SetPrefix("")
-	confDir := path.Join(os.Getenv("HOME"), ".dwn")
+	var confDir string
+	if _, err := os.Stat("dwn.conf"); err == nil {
+		confDir = "./"
+	} else {
+		confDir = path.Join(os.Getenv("HOME"), ".dwn")
+	}
 	conf, err := config.ReadDefault(path.Join(confDir, "dwn.conf"))
 	if err != nil {
 		log.Fatalf("%s", err)
