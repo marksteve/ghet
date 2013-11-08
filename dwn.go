@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+  "path/filepath"
 	"strings"
 )
 
@@ -28,7 +29,7 @@ func main() {
 		log.Fatalf("%s", err)
 	}
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s url [options]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s url [output] [options]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -48,7 +49,14 @@ func main() {
 	case "github.com":
 		name, content = Github(conf, u)
 	}
-	f, err := os.OpenFile(name, os.O_CREATE|os.O_WRONLY, 0777)
+  if flag.NArg() > 1 {
+    name = flag.Arg(1)
+  }
+  absPath, err := filepath.Abs(name)
+  if err != nil {
+    log.Fatalf("%s", err)
+  }
+	f, err := os.OpenFile(absPath, os.O_CREATE|os.O_WRONLY, 0777)
 	_, err = f.Write(content)
 	if err != nil {
 		log.Fatalf("%s", err)
