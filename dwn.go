@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"github.com/google/go-github/github"
 	"github.com/robfig/config"
+	"github.com/syndtr/goleveldb/leveldb"
 	"log"
 	"net/url"
 	"os"
 	"path"
-  "path/filepath"
+	"path/filepath"
 	"strings"
+  "text/tabwriter"
 )
 
 func main() {
@@ -28,11 +30,28 @@ func main() {
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
+	dbPath := path.Join(confDir, "db")
+	db, err := leveldb.OpenFile(dbPath, nil)
+	defer db.Close()
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s url [output] [options]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
+	var list = flag.Bool("list", false, "list dwn'd items")
 	flag.Parse()
+  if *list {
+    w := &tabwriter.Writer{}
+    w.Init(os.Stdout, 0, 8, 1, ' ', 0)
+    fmt.Fprintln(w, "Path\tURI")
+    iter := db.NewIterator(nil)
+    for iter.Next() {
+      key := iter.Key()
+      value := iter.Value()
+      fmt.Fprintf(w, "%s\t%s\n", key, value)
+    }
+    w.Flush()
+    return
+  }
 	if flag.NArg() < 1 {
 		log.Fatalf("no url specified")
 	}
@@ -49,17 +68,22 @@ func main() {
 	case "github.com":
 		name, content = Github(conf, u)
 	}
-  if flag.NArg() > 1 {
-    name = flag.Arg(1)
-  }
-  absPath, err := filepath.Abs(name)
-  if err != nil {
-    log.Fatalf("%s", err)
-  }
+	if flag.NArg() > 1 {
+		name = flag.Arg(1)
+	}
+	absPath, err := filepath.Abs(name)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
 	f, err := os.OpenFile(absPath, os.O_CREATE|os.O_WRONLY, 0777)
+	defer f.Close()
 	_, err = f.Write(content)
 	if err != nil {
 		log.Fatalf("%s", err)
+	}
+	err = db.Put([]byte(absPath), []byte(uri), nil)
+	if err != nil {
+		log.Fatal("%s", err)
 	}
 }
 
