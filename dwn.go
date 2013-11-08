@@ -33,11 +33,10 @@ func main() {
 	dbPath := path.Join(confDir, "db")
 	db, err := leveldb.OpenFile(dbPath, nil)
 	defer db.Close()
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s url [output] [options]\n", os.Args[0])
-		flag.PrintDefaults()
-	}
+  var uri = flag.String("u", "", "uri to dwn")
+  var output = flag.String("o", "", "dwn to output")
 	var list = flag.Bool("list", false, "list dwn'd items")
+	var update = flag.Bool("update", false, "update dwn'd item")
 	flag.Parse()
   if *list {
     w := &tabwriter.Writer{}
@@ -52,14 +51,26 @@ func main() {
     w.Flush()
     return
   }
-	if flag.NArg() < 1 {
-		log.Fatalf("no url specified")
-	}
-	uri := flag.Arg(0)
-	u, err := url.ParseRequestURI(uri)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
+  var u *url.URL
+  if *update {
+    if *output == "" {
+      log.Fatalf("specify file to update with -o")
+    }
+    surl, err := db.Get([]byte(*output), nil)
+    if err != nil {
+      log.Fatalf("%s", err)
+    }
+    u, err = url.ParseRequestURI(string(surl))
+  } else {
+    if *uri == "" {
+      log.Fatalf("no uri specified")
+      return
+    }
+    u, err = url.ParseRequestURI(*uri)
+    if err != nil {
+      log.Fatalf("%s", err)
+    }
+  }
 	var (
 		name    string
 		content []byte
@@ -68,8 +79,8 @@ func main() {
 	case "github.com":
 		name, content = Github(conf, u)
 	}
-	if flag.NArg() > 1 {
-		name = flag.Arg(1)
+	if *output != "" {
+		name = *output
 	}
 	absPath, err := filepath.Abs(name)
 	if err != nil {
@@ -81,10 +92,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
-	err = db.Put([]byte(absPath), []byte(uri), nil)
+	err = db.Put([]byte(absPath), []byte(*uri), nil)
 	if err != nil {
 		log.Fatal("%s", err)
 	}
+  log.Printf("%s -> %s", u.String(), absPath)
 }
 
 type GithubRepoContent struct {
