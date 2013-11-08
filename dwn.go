@@ -14,7 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-  "text/tabwriter"
+	"text/tabwriter"
 )
 
 func main() {
@@ -33,44 +33,44 @@ func main() {
 	dbPath := path.Join(confDir, "db")
 	db, err := leveldb.OpenFile(dbPath, nil)
 	defer db.Close()
-  var uri = flag.String("u", "", "uri to dwn")
-  var output = flag.String("o", "", "dwn to output")
+	var uri = flag.String("u", "", "uri to dwn")
+	var output = flag.String("o", "", "dwn to output")
 	var list = flag.Bool("list", false, "list dwn'd items")
 	var update = flag.Bool("update", false, "update dwn'd item")
 	flag.Parse()
-  if *list {
-    w := &tabwriter.Writer{}
-    w.Init(os.Stdout, 0, 8, 1, ' ', 0)
-    fmt.Fprintln(w, "Path\tURI")
-    iter := db.NewIterator(nil)
-    for iter.Next() {
-      key := iter.Key()
-      value := iter.Value()
-      fmt.Fprintf(w, "%s\t%s\n", key, value)
-    }
-    w.Flush()
-    return
-  }
-  var u *url.URL
-  if *update {
-    if *output == "" {
-      log.Fatalf("specify file to update with -o")
-    }
-    surl, err := db.Get([]byte(*output), nil)
-    if err != nil {
-      log.Fatalf("%s", err)
-    }
-    u, err = url.ParseRequestURI(string(surl))
-  } else {
-    if *uri == "" {
-      log.Fatalf("no uri specified")
-      return
-    }
-    u, err = url.ParseRequestURI(*uri)
-    if err != nil {
-      log.Fatalf("%s", err)
-    }
-  }
+	if *list {
+		w := &tabwriter.Writer{}
+		w.Init(os.Stdout, 0, 8, 1, ' ', 0)
+		fmt.Fprintln(w, "Path\tURI")
+		iter := db.NewIterator(nil)
+		for iter.Next() {
+			key := iter.Key()
+			value := iter.Value()
+			fmt.Fprintf(w, "%s\t%s\n", key, value)
+		}
+		w.Flush()
+		return
+	}
+	var u *url.URL
+	if *update {
+		if *output == "" {
+			log.Fatalf("specify file to update with -o")
+		}
+		surl, err := db.Get([]byte(*output), nil)
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+		u, err = url.ParseRequestURI(string(surl))
+	} else {
+		if *uri == "" {
+			log.Fatalf("no uri specified")
+			return
+		}
+		u, err = url.ParseRequestURI(*uri)
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+	}
 	var (
 		name    string
 		content []byte
@@ -96,7 +96,7 @@ func main() {
 	if err != nil {
 		log.Fatal("%s", err)
 	}
-  log.Printf("%s -> %s", u.String(), absPath)
+	log.Printf("%s -> %s", u.String(), absPath)
 }
 
 type GithubRepoContent struct {
