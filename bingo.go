@@ -27,20 +27,20 @@ func main() {
 	log.SetFlags(0)
 	log.SetPrefix("")
 	var confDir string
-	if _, err := os.Stat("dwn.conf"); err == nil {
+	if _, err := os.Stat("bingo.conf"); err == nil {
 		confDir = "./"
 	} else {
-		confDir = path.Join(os.Getenv("HOME"), ".dwn")
+		confDir = path.Join(os.Getenv("HOME"), ".bingo")
 	}
-	conf, err := config.ReadDefault(path.Join(confDir, "dwn.conf"))
+	conf, err := config.ReadDefault(path.Join(confDir, "bingo.conf"))
 	checkError(err)
 	dbPath := path.Join(confDir, "db")
 	db, err := leveldb.OpenFile(dbPath, nil)
 	defer db.Close()
-	var uri = flag.String("u", "", "uri to dwn")
-	var output = flag.String("o", "", "dwn to output")
-	var list = flag.Bool("list", false, "list dwn'd items")
-	var update = flag.Bool("update", false, "update dwn'd item")
+	var uri = flag.String("u", "", "uri")
+	var output = flag.String("o", "", "output")
+	var list = flag.Bool("list", false, "list items")
+	var update = flag.Bool("update", false, "update an item")
 	flag.Parse()
 	if *list {
 		w := &tabwriter.Writer{}
