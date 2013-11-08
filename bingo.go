@@ -26,22 +26,44 @@ func checkError(err error) {
 func main() {
 	log.SetFlags(0)
 	log.SetPrefix("")
-	var confDir string
-	if _, err := os.Stat("bingo.conf"); err == nil {
-		confDir = "./"
-	} else {
-		confDir = path.Join(os.Getenv("HOME"), ".bingo")
-	}
-	conf, err := config.ReadDefault(path.Join(confDir, "bingo.conf"))
-	checkError(err)
-	dbPath := path.Join(confDir, "db")
-	db, err := leveldb.OpenFile(dbPath, nil)
-	defer db.Close()
+
 	var uri = flag.String("u", "", "uri")
 	var output = flag.String("o", "", "output")
+	var setup = flag.Bool("setup", false, "setup bingo")
 	var list = flag.Bool("list", false, "list items")
 	var update = flag.Bool("update", false, "update an item")
 	flag.Parse()
+
+	confDir := path.Join(os.Getenv("HOME"), ".bingo")
+	confPath := path.Join(confDir, "bingo.conf")
+
+	// Setup
+	if *setup {
+		if _, err := os.Stat(confDir); os.IsNotExist(err) {
+			err = os.MkdirAll(confDir, os.ModeDir|0775)
+			checkError(err)
+		}
+		c := config.NewDefault()
+		var gat string
+		log.Printf("github access token (https://github.com/settings/tokens/new): ")
+		_, err := fmt.Scanln(&gat)
+		checkError(err)
+		c.AddSection("github")
+		c.AddOption("github", "access_token", gat)
+		c.WriteFile(confPath, 0644, "bingo")
+		return
+	}
+
+	// Load config
+	conf, err := config.ReadDefault(confPath)
+	checkError(err)
+
+	// Load db
+	dbPath := path.Join(confDir, "db")
+	db, err := leveldb.OpenFile(dbPath, nil)
+	defer db.Close()
+
+	// List items
 	if *list {
 		w := &tabwriter.Writer{}
 		w.Init(os.Stdout, 0, 8, 1, ' ', 0)
@@ -55,6 +77,8 @@ func main() {
 		w.Flush()
 		return
 	}
+
+	// Get url
 	var u *url.URL
 	if *update {
 		if *output == "" {
@@ -71,6 +95,8 @@ func main() {
 		u, err = url.ParseRequestURI(*uri)
 	}
 	checkError(err)
+
+	// Download/update
 	var (
 		name    string
 		content []byte
@@ -78,7 +104,7 @@ func main() {
 	if u.Host != "github.com" {
 		log.Fatalf("not a github uri")
 	}
-	name, content = Github(conf, u)
+	name, content = fetch(conf, u)
 	if *output != "" {
 		name = *output
 	}
@@ -98,7 +124,7 @@ type GithubRepoContent struct {
 	Content string `json:"content"`
 }
 
-func Github(conf *config.Config, u *url.URL) (string, []byte) {
+func fetch(conf *config.Config, u *url.URL) (string, []byte) {
 	tok, err := conf.String("github", "access_token")
 	checkError(err)
 	ght := &oauth.Transport{Token: &oauth.Token{AccessToken: tok}}
