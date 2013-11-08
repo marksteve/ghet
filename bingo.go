@@ -75,10 +75,10 @@ func main() {
 		name    string
 		content []byte
 	)
-	switch u.Host {
-	case "github.com":
-		name, content = Github(conf, u)
+	if u.Host != "github.com" {
+		log.Fatalf("not a github uri")
 	}
+	name, content = Github(conf, u)
 	if *output != "" {
 		name = *output
 	}
