@@ -29,13 +29,13 @@ func main() {
 
 	var uri = flag.String("u", "", "uri")
 	var output = flag.String("o", "", "output")
-	var setup = flag.Bool("setup", false, "setup bingo")
+	var setup = flag.Bool("setup", false, "setup ghet")
 	var list = flag.Bool("list", false, "list items")
 	var update = flag.Bool("update", false, "update an item")
 	flag.Parse()
 
-	confDir := path.Join(os.Getenv("HOME"), ".bingo")
-	confPath := path.Join(confDir, "bingo.conf")
+	confDir := path.Join(os.Getenv("HOME"), ".ghet")
+	confPath := path.Join(confDir, "ghet.conf")
 
 	// Setup
 	if *setup {
@@ -50,7 +50,7 @@ func main() {
 		checkError(err)
 		c.AddSection("github")
 		c.AddOption("github", "access_token", gat)
-		c.WriteFile(confPath, 0644, "bingo")
+		c.WriteFile(confPath, 0644, "ghet")
 		return
 	}
 
