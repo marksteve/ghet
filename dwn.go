@@ -17,6 +17,12 @@ import (
 	"text/tabwriter"
 )
 
+func checkError(err error) {
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+}
+
 func main() {
 	log.SetFlags(0)
 	log.SetPrefix("")
@@ -27,9 +33,7 @@ func main() {
 		confDir = path.Join(os.Getenv("HOME"), ".dwn")
 	}
 	conf, err := config.ReadDefault(path.Join(confDir, "dwn.conf"))
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
+	checkError(err)
 	dbPath := path.Join(confDir, "db")
 	db, err := leveldb.OpenFile(dbPath, nil)
 	defer db.Close()
@@ -57,9 +61,7 @@ func main() {
 			log.Fatalf("specify file to update with -o")
 		}
 		surl, err := db.Get([]byte(*output), nil)
-		if err != nil {
-			log.Fatalf("%s", err)
-		}
+		checkError(err)
 		u, err = url.ParseRequestURI(string(surl))
 	} else {
 		if *uri == "" {
@@ -67,10 +69,8 @@ func main() {
 			return
 		}
 		u, err = url.ParseRequestURI(*uri)
-		if err != nil {
-			log.Fatalf("%s", err)
-		}
 	}
+	checkError(err)
 	var (
 		name    string
 		content []byte
@@ -83,19 +83,13 @@ func main() {
 		name = *output
 	}
 	absPath, err := filepath.Abs(name)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
+	checkError(err)
 	f, err := os.OpenFile(absPath, os.O_CREATE|os.O_WRONLY, 0777)
 	defer f.Close()
 	_, err = f.Write(content)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
+	checkError(err)
 	err = db.Put([]byte(absPath), []byte(*uri), nil)
-	if err != nil {
-		log.Fatal("%s", err)
-	}
+	checkError(err)
 	log.Printf("%s -> %s", u.String(), absPath)
 }
 
@@ -106,9 +100,7 @@ type GithubRepoContent struct {
 
 func Github(conf *config.Config, u *url.URL) (string, []byte) {
 	tok, err := conf.String("github", "access_token")
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
+	checkError(err)
 	ght := &oauth.Transport{Token: &oauth.Token{AccessToken: tok}}
 	ghc := github.NewClient(ght.Client())
 	us := strings.Split(u.Path, "/")
@@ -116,17 +108,11 @@ func Github(conf *config.Config, u *url.URL) (string, []byte) {
 	p := strings.Join(us[5:], "/")
 	ru := strings.Join([]string{"repos", or, "contents", p}, "/")
 	req, err := ghc.NewRequest("GET", ru, nil)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
+	checkError(err)
 	rc := GithubRepoContent{}
 	_, err = ghc.Do(req, &rc)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
+	checkError(err)
 	dec, err := base64.StdEncoding.DecodeString(rc.Content)
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
+	checkError(err)
 	return rc.Name, dec
 }
